@@ -23,7 +23,7 @@ npx actions-attest-sbom --subject-path ./sbom.json --sbom-path ./sbom.json
 
 # Step 11: Verify SBOM attestation
 echo "Verifying SBOM attestation..."
-gh attestation verify ./sbom.json --owner dheeman2912 --format=json
+gh attestation verify ./sbom.json --owner dheemandas --format=json
 
 # Step 12: Build Docker Image using Maven
 echo "Building Docker Image..."
