@@ -77,26 +77,26 @@ jobs:
      - name: Scan Docker Image with Trivy
        id: scan_docker_image
        run: |
-         trivy image ghcr.io/DheemanDas/spring-petclinic:v1 > trivy_scan_results.txt || { echo "Error: Trivy scan failed"; exit 1; }
+         trivy image ghcr.io/dheemandas/spring-petclinic:v1 > trivy_scan_results.txt || { echo "Error: Trivy scan failed"; exit 1; }
 
      # Step 7: Tag Docker Image
      - name: Tag Docker Image
        id: tag_docker_image
        run: |
-         docker tag docker.io/library/spring-petclinic:3.3.0-SNAPSHOT ghcr.io/DheemanDas/spring-petclinic:v1 || { echo "Error: Tagging Docker image failed"; exit 1; }
+         docker tag docker.io/library/spring-petclinic:3.3.0-SNAPSHOT ghcr.io/dheemandas/spring-petclinic:v1 || { echo "Error: Tagging Docker image failed"; exit 1; }
 
      # Step 8: Push Docker Image
      - name: Push Docker Image
        id: push_docker_image
        run: |
-          docker push ghcr.io/DheemanDas/spring-petclinic:v1 || { echo "Error: Pushing Docker image failed"; exit 1; }
-          docker inspect ghcr.io/DheemanDas/spring-petclinic:v1 || { echo "Error: Inspecting Docker image failed"; exit 1; }
+          docker push ghcr.io/dheemandas/spring-petclinic:v1 || { echo "Error: Pushing Docker image failed"; exit 1; }
+          docker inspect ghcr.io/dheemandas/spring-petclinic:v1 || { echo "Error: Inspecting Docker image failed"; exit 1; }
 
      # Step 9: Get SHA256 of the Pushed Docker Image
      - name: Get SHA256 of Docker Image
        id: get_image_sha
        run: |
-          IMAGE_SHA=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/DheemanDas/spring-petclinic:v1 | cut -d'@' -f2)
+          IMAGE_SHA=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/dheemandas/spring-petclinic:v1 | cut -d'@' -f2)
           echo "IMAGE_SHA=$IMAGE_SHA" >> $GITHUB_ENV
           echo "::set-output name=image_sha::$IMAGE_SHA"
 
@@ -106,7 +106,7 @@ jobs:
        run: |
           echo "${{ secrets.COSIGN_KEY }}" | tr -d '\r' > cosign.key
           chmod 600 cosign.key
-          cosign sign --key cosign.key ghcr.io/DheemanDas/spring-petclinic@${{ env.IMAGE_SHA }} --yes || { echo "Error: Signing Docker image failed"; exit 1; }
+          cosign sign --key cosign.key ghcr.io/dheemandas/spring-petclinic@${{ env.IMAGE_SHA }} --yes || { echo "Error: Signing Docker image failed"; exit 1; }
        env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSPHRASE }}
@@ -124,14 +124,14 @@ jobs:
      - name: Verify Docker Image Signature
        id: verify_image_signature
        run: |
-          cosign verify --key cosign.pub ghcr.io/DheemanDas/spring-petclinic@${{ env.IMAGE_SHA }} | jq . || { echo "Error: Verification of Docker image signature failed"; exit 1; }
+          cosign verify --key cosign.pub ghcr.io/dheemandas/spring-petclinic@${{ env.IMAGE_SHA }} | jq . || { echo "Error: Verification of Docker image signature failed"; exit 1; }
 
      # Step 13: Attach SBOM
      - name: Attach SBOM
        id: attach_sbom
        run: |
           set -e
-          output=$(cosign attach sbom --sbom sbom.json ghcr.io/DheemanDas/spring-petclinic@${{ env.IMAGE_SHA }} 2>&1) || { echo "Error: Failed to run cosign attach sbom"; exit 1; }
+          output=$(cosign attach sbom --sbom sbom.json ghcr.io/dheemandas/spring-petclinic@${{ env.IMAGE_SHA }} 2>&1) || { echo "Error: Failed to run cosign attach sbom"; exit 1; }
           echo "cat output --> showing output below"
           echo "output: $output"
           sbom_filename=$(echo "$output" | grep -oP 'sha256-[\w\d]+\.sbom') || { echo "Error: Failed to extract SBOM filename"; exit 1; }
@@ -151,7 +151,7 @@ jobs:
             exit 1
           fi
           echo "Signing SBOM with filename: $SBOM_FILENAME"
-          cosign sign --key env://COSIGN_KEY ghcr.io/DheemanDas/spring-petclinic:$SBOM_FILENAME --yes || { echo "Error: Failed to sign with SBOM"; exit 1; }
+          cosign sign --key env://COSIGN_KEY ghcr.io/dheemandas/spring-petclinic:$SBOM_FILENAME --yes || { echo "Error: Failed to sign with SBOM"; exit 1; }
        env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSPHRASE }}
@@ -161,14 +161,14 @@ jobs:
        id: verify_sbom_signature
        run: |
           set -e
-          cosign verify --key cosign.pub ghcr.io/DheemanDas/spring-petclinic:$SBOM_FILENAME | jq . || { echo "Error: Verification of SBOM signature failed"; exit 1; }
+          cosign verify --key cosign.pub ghcr.io/dheemandas/spring-petclinic:$SBOM_FILENAME | jq . || { echo "Error: Verification of SBOM signature failed"; exit 1; }
 
      # Step 16: Directly attest SBOM with the Image
      - name: Directly attest SBOM with the Image
        id: attest_sbom
        run: |
           set -e
-          output=$(cosign attest --key env://COSIGN_KEY --predicate sbom.json ghcr.io/DheemanDas/spring-petclinic@${{ env.IMAGE_SHA }} --yes 2>&1) || { echo "Error: Failed to attest SBOM with the image"; exit 1; }
+          output=$(cosign attest --key env://COSIGN_KEY --predicate sbom.json ghcr.io/dheemandas/spring-petclinic@${{ env.IMAGE_SHA }} --yes 2>&1) || { echo "Error: Failed to attest SBOM with the image"; exit 1; }
           echo "output: $output"
        env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
@@ -179,7 +179,7 @@ jobs:
        id: verify_attested_image
        run: |
           set -e
-          output1=$(cosign verify-attestation --key cosign.pub ghcr.io/DheemanDas/spring-petclinic@${{ env.IMAGE_SHA }} | jq . 2>&1) || { echo "Error: Failed to verify the attested image"; exit 1; }
+          output1=$(cosign verify-attestation --key cosign.pub ghcr.io/dheemandas/spring-petclinic@${{ env.IMAGE_SHA }} | jq . 2>&1) || { echo "Error: Failed to verify the attested image"; exit 1; }
           echo "output: $output1"
 
      # Step 18: Sign SBOM
@@ -329,8 +329,8 @@ jobs:
     # Step 8: Attestation using Predicate
     - name: Attest Image using Predicate
       run: |
-        # cosign attest --key env://COSIGN_KEY --predicate output.json ghcr.io/DheemanDas/spring-petclinic@${{ needs.build-and-scan.outputs.image_sha }} --yes || { echo "Error: Failed to attest predicate with the image"; exit 1; }
-        cosign attest --key env://COSIGN_KEY --predicate output.json --type https://example.com/CodeReview/v1 ghcr.io/DheemanDas/spring-petclinic@${{ needs.build-and-scan.outputs.image_sha }} --yes || { echo "Error: Failed to attest predicate with the image"; exit 1; }
+        # cosign attest --key env://COSIGN_KEY --predicate output.json ghcr.io/dheemandas/spring-petclinic@${{ needs.build-and-scan.outputs.image_sha }} --yes || { echo "Error: Failed to attest predicate with the image"; exit 1; }
+        cosign attest --key env://COSIGN_KEY --predicate output.json --type https://example.com/CodeReview/v1 ghcr.io/dheemandas/spring-petclinic@${{ needs.build-and-scan.outputs.image_sha }} --yes || { echo "Error: Failed to attest predicate with the image"; exit 1; }
       shell: bash
       env:
         COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
@@ -339,8 +339,8 @@ jobs:
     # Step 9: Verify Predicate Attestation
     - name: Verify Predicate Attestation
       run: |
-        # cosign verify-attestation --certificate-github-workflow-name=.github/workflows/cicd.yml@refs/heads/testing --certificate-github-workflow-ref=refs/heads/testing --certificate-github-workflow-repository=https://github.com/DheemanDas/spring-petclinic --certificate-github-workflow-trigger=push --key cosign.pub ghcr.io/DheemanDas/spring-petclinic@${{ needs.build-and-scan.outputs.image_sha }} | jq -r .payload | base64 --decode | jq . || { echo "Error: Predicate attestation verification failed"; exit 1; }
-        cosign verify-attestation --type https://example.com/CodeReview/v1 --certificate-github-workflow-name=.github/workflows/cicd.yml@refs/heads/testing --certificate-github-workflow-ref=refs/heads/testing --certificate-github-workflow-repository=https://github.com/DheemanDas/spring-petclinic --certificate-github-workflow-trigger=push --key cosign.pub ghcr.io/DheemanDas/spring-petclinic@${{ needs.build-and-scan.outputs.image_sha }} | jq -r .payload | base64 --decode | jq . || { echo "Error: Predicate attestation verification failed"; exit 1; }
+        # cosign verify-attestation --certificate-github-workflow-name=.github/workflows/cicd.yml@refs/heads/testing --certificate-github-workflow-ref=refs/heads/testing --certificate-github-workflow-repository=https://github.com/dheemandas/spring-petclinic --certificate-github-workflow-trigger=push --key cosign.pub ghcr.io/dheemandas/spring-petclinic@${{ needs.build-and-scan.outputs.image_sha }} | jq -r .payload | base64 --decode | jq . || { echo "Error: Predicate attestation verification failed"; exit 1; }
+        cosign verify-attestation --type https://example.com/CodeReview/v1 --certificate-github-workflow-name=.github/workflows/cicd.yml@refs/heads/testing --certificate-github-workflow-ref=refs/heads/testing --certificate-github-workflow-repository=https://github.com/dheemandas/spring-petclinic --certificate-github-workflow-trigger=push --key cosign.pub ghcr.io/dheemandas/spring-petclinic@${{ needs.build-and-scan.outputs.image_sha }} | jq -r .payload | base64 --decode | jq . || { echo "Error: Predicate attestation verification failed"; exit 1; }
       shell: bash
 
   Deploy_To_Aks:
